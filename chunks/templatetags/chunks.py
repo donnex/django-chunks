@@ -34,7 +34,7 @@ class ChunkNode(template.Node):
             if c is None:
                 c = Chunk.objects.get(key=self.key)
                 cache.set(cache_key, c, int(self.cache_time))
-            content = '<div class="chunk" id="{}">{}</div>'.format(
+            content = u'<div class="chunk" id="{}">{}</div>'.format(
                 c.key, c.content)
         except Chunk.DoesNotExist:
             content = ''
