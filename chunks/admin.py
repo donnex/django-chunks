@@ -3,7 +3,7 @@ from models import Chunk
 
 
 class ChunkAdmin(admin.ModelAdmin):
-    list_display = ('name', 'key',)
+    list_display = ('name', 'key', 'description')
     search_fields = ('name', 'key', 'content')
     prepopulated_fields = {'key': ('name',)}
 
