@@ -1,11 +1,10 @@
+# -*- coding: utf-8 -*-
 from django import template
 from django.db import models
-from django.core.cache import cache
 
 register = template.Library()
 
 Chunk = models.get_model('chunks', 'chunk')
-CACHE_PREFIX = "chunk_"
 
 
 def do_chunk(parser, token):
@@ -15,27 +14,31 @@ def do_chunk(parser, token):
         raise template.TemplateSyntaxError, "%r tag should have either 2 or 3 arguments" % (tokens[0],)
     if len(tokens) == 2:
         tag_name, key = tokens
-        cache_time = 0
+        cache_time = None
     if len(tokens) == 3:
         tag_name, key, cache_time = tokens
+        cache_time = int(cache_time)
     key = ensure_quoted_string(key, "%r tag's argument should be in quotes" % tag_name)
     return ChunkNode(key, cache_time)
 
 
 class ChunkNode(template.Node):
-    def __init__(self, key, cache_time=0):
+    def __init__(self, key, cache_time=None):
         self.key = key
         self.cache_time = cache_time
 
     def render(self, context):
         try:
-            cache_key = CACHE_PREFIX + self.key
-            c = cache.get(cache_key)
-            if c is None:
-                c = Chunk.objects.get(key=self.key)
-                cache.set(cache_key, c, int(self.cache_time))
+            # Try to fetch cached node
+            chunk = Chunk.get_cached_node(self.key)
+
+            if chunk is None:
+                chunk = Chunk.objects.get(key=self.key)
+
+                # Cache node
+                chunk.set_node_cache(self.cache_time)
             content = u'<div class="chunk" id="{}">{}</div>'.format(
-                c.key, c.content)
+                chunk.key, chunk.content)
         except Chunk.DoesNotExist:
             content = ''
         return content

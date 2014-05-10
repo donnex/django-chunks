@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.signals import post_save
+from django.dispatch.dispatcher import receiver
+from django.core.cache import cache
+
 
 from ckeditor.fields import RichTextField
 
@@ -12,6 +16,8 @@ class Chunk(models.Model):
     any template with the use of a special template
     tag
     """
+
+    CACHE_PREFIX = 'chunk:'
 
     name = models.CharField(
         _(u'Name'),
@@ -41,3 +47,21 @@ class Chunk(models.Model):
     def __unicode__(self):
         return self.key
 
+    def set_node_cache(self, cache_time):
+        cache_key = Chunk.CACHE_PREFIX + self.key
+        cache.set(cache_key, self, cache_time)
+
+    @staticmethod
+    def get_cached_node(key):
+        cache_key = Chunk.CACHE_PREFIX + key
+        chunk = cache.get(cache_key)
+
+        return chunk
+
+
+@receiver(post_save, sender=Chunk)
+def _chunk_post_save(sender, instance, **kwargs):
+    """Invalidate the cache after chunk save"""
+
+    cache_key = Chunk.CACHE_PREFIX + instance.key
+    cache.delete(cache_key)
