@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django import template
 from django.db import models
+from django.core.cache import cache
 
 register = template.Library()
 
@@ -30,13 +31,14 @@ class ChunkNode(template.Node):
     def render(self, context):
         try:
             # Try to fetch cached node
-            chunk = Chunk.get_cached_node(self.key)
+            cache_key = Chunk.get_cache_key(self.key)
+            chunk = cache.get(cache_key)
 
             if chunk is None:
                 chunk = Chunk.objects.get(key=self.key)
 
                 # Cache node
-                chunk.set_node_cache(self.cache_time)
+                cache.set(cache_key, chunk, self.cache_time)
             content = u'<div class="chunk" id="{}">{}</div>'.format(
                 chunk.key, chunk.content)
         except Chunk.DoesNotExist:

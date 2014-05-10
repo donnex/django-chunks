@@ -47,21 +47,17 @@ class Chunk(models.Model):
     def __unicode__(self):
         return self.key
 
-    def set_node_cache(self, cache_time):
-        cache_key = Chunk.CACHE_PREFIX + self.key
-        cache.set(cache_key, self, cache_time)
-
     @staticmethod
-    def get_cached_node(key):
-        cache_key = Chunk.CACHE_PREFIX + key
-        chunk = cache.get(cache_key)
+    def get_cache_key(key):
+        return '{}{}'.format(Chunk.CACHE_PREFIX, key)
 
-        return chunk
+    @property
+    def cache_key(self):
+        return '{}{}'.format(self.CACHE_PREFIX, self.key)
 
 
 @receiver(post_save, sender=Chunk)
 def _chunk_post_save(sender, instance, **kwargs):
-    """Invalidate the cache after chunk save"""
+    """Delete the cache after chunk save"""
 
-    cache_key = Chunk.CACHE_PREFIX + instance.key
-    cache.delete(cache_key)
+    cache.delete(instance.cache_key)
