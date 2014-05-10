@@ -32,7 +32,7 @@ class Chunk(models.Model):
         _(u'Description'),
         blank=True,
         max_length=64,
-        help_text=_(u'Short Description'))
+        help_text=_(u'Short description'))
 
     class Meta:
         verbose_name = _(u'chunk')
